@@ -1,0 +1,76 @@
+with owners_ok as (
+SELECT
+    docs.cesion_owner, count(*),
+    MAX(docs.cesion_owner_name_fixed) OVER (PARTITION BY docs.cesion_owner_name_fixed) AS cesion_owner_name_fixed,
+    MAX(docs.cesion_owner_name) OVER (PARTITION BY docs.cesion_owner) AS cesion_owner_name
+FROM
+    (
+        SELECT
+            d.cesion_owner,
+            CASE WHEN d.cesion_owner IN ('99595990-9', '76146246-6', '76261789-7', '96626570-1')
+                THEN 'LATAM TRADE CAPITAL S.A'
+                ELSE cesion_owner_name END AS cesion_owner_name_fixed, 
+            d.cesion_owner_name
+        FROM
+            fc_documents d
+        WHERE
+            year(FROM_UNIXTIME(d.emission)) > 2022 AND d.cesion_owner IS NOT NULL
+         --    and d.cesion_owner = '77218874-9'
+    ) docs
+GROUP BY
+    docs.cesion_owner
+    )
+select
+    document_id,
+    document_type,
+    no_reception_doc,
+    d.client_rut,
+    folio,
+    debtor_rut,
+    custom_expiration_utc,
+    applied_base_rate,
+    applied_finance_percent,
+    backoffice_status,
+    paid_amount,
+    FROM_UNIXTIME(emission) AS emision,
+    DATEDIFF(FROM_UNIXTIME(emission),CURDATE()) AS EMIDIFF,
+    status_resale,
+    finance_amount,
+    reseller_status,
+    has_annulment_nc,
+    sii_reclaimed,
+    debtor_name,
+    debtor_category,
+    confirmation_verification_date,
+    confirmation_verification_state,
+    reseller_investor_name,
+    collect_executive_id,
+    last_management,
+    next_management_date,
+    last_payment_date,
+    financed_balance,
+    amount,
+    sii_executive_merit,
+    client_name,
+    FROM_UNIXTIME(expiration)  AS expiration,
+    original_amount,
+    comercial_executive_id,
+    abonado_date_utc,
+    last_management_date,
+    document_type_description,
+    published_client_dicom,
+    published_debtor_dicom,
+    has_amount_nc,
+    has_text_nc,
+    judicial_cause_id,
+    judicial_cause_status,
+    date_annulment_nc,
+    d.status, 
+    o.cesion_owner_name,
+    o.cesion_owner,
+    CASE WHEN o.cesion_owner IN ('99595990-9', '76146246-6', '76261789-7', '96626570-1') AND d.status IN (2,3) THEN o.cesion_owner_name_fixed
+    	ELSE o.cesion_owner_name END AS factor_owner_name
+from fc_documents d
+left join owners_ok o ON o.cesion_owner = d.cesion_owner  
+WHERE  (deleted is null or deleted = 0) and amount > 0 and  date(FROM_UNIXTIME(emission)) >= DATE_SUB(NOW(),INTERVAL 210 DAY)
+
