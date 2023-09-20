@@ -1,4 +1,5 @@
 
+
 WITH cartera AS (
 SELECT client_rut,
 IFNULL(sum(d.financed_balance),0) as saldofinanciado,
@@ -13,8 +14,14 @@ group by client_rut
 
 select c.customer_id, c.business_reason, c.rib,   c.comercial_executive_id, 
 c.allowed_operate, c.status, c.inoperative_end_date, c.inoperative_cause, 
-ifnull(ca.saldofinanciado,0) as  saldofinanciado, ifnull(ca.Mor,0) as Mor, ifnull(ca.Jud,0) as Jud , 
-ifnull(ca.PreJud,0) as PreJud, ifnull(ca.Vig,0) as Vig
-
-from fc_customers as c LEFT join cartera as ca ON c.customer_id = ca.client_rut
+ifnull(ca.saldofinanciado,0) as  saldofinanciado, ifnull(ca.Mor,0) as mor, ifnull(ca.Jud,0) as jud , 
+ifnull(ca.PreJud,0) as preJud, ifnull(ca.Vig,0) as vig, 
+CASE WHEN DATEDIFF(CURDATE(), MAX(dcs.abonado_date)) > 365 THEN 1
+     WHEN DATEDIFF(CURDATE(), MAX(dcs.abonado_date)) <= 365 THEN 2
+     ELSE 0
+   END AS recurrency
+from fc_customers as c 
+LEFT join cartera as ca ON c.customer_id = ca.client_rut
+left join fc_documents dcs on dcs.client_rut = c.customer_id 
+where year(FROM_UNIXTIME(dcs.emission)) > 2019 
 group by  c.customer_id, c.business_reason, c.rib, c.comercial_executive_id
