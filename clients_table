@@ -1,0 +1,18 @@
+WITH cartera AS (
+SELECT client_rut,
+IFNULL(sum(d.financed_balance),0) as saldofinanciado,
+case when d.backoffice_status = "Mor" then ifnull(sum(financed_balance),0) else 0 end as Mor,
+case when d.backoffice_status = "Jud" then ifnull(sum(financed_balance),0) else 0 end as Jud,
+case when d.backoffice_status = "PreJud" then ifnull(sum(financed_balance),0) else 0 end as PreJud,
+case when d.backoffice_status = "Vig" then ifnull(sum(financed_balance),0) else 0 end as Vig
+FROM fc_documents as d
+WHERE d.status = 2 and (d.deleted is null or d.deleted = 0) and d.backoffice_status NOT IN ('Cas')
+group by client_rut
+)
+
+select c.customer_id, c.business_reason, c.rib,   c.comercial_executive_id, 
+c.allowed_operate, c.status, c.inoperative_end_date, c.inoperative_cause, 
+ca.saldofinanciado, ca.Mor, ca.Jud, ca.PreJud, ca.Vig
+
+from fc_customers as c LEFT join cartera as ca ON c.customer_id = ca.client_rut
+group by  c.customer_id, c.business_reason, c.rib, c.comercial_executive_id
