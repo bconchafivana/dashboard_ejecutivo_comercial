@@ -19,7 +19,7 @@ FROM
     ) docs
 GROUP BY
     docs.cesion_owner
-    )
+)
 select
     document_id,
     document_type,
@@ -69,7 +69,9 @@ select
     o.cesion_owner_name,
     o.cesion_owner,
     CASE WHEN o.cesion_owner IN ('99595990-9', '76146246-6', '76261789-7', '96626570-1') AND d.status IN (2,3) THEN o.cesion_owner_name_fixed
-    	ELSE o.cesion_owner_name END AS factor_owner_name
+    	ELSE o.cesion_owner_name END AS factor_owner_name,
+    debtor_category,
+    comercial_executive_name
 from fc_documents d
 left join owners_ok o ON o.cesion_owner = d.cesion_owner  
 WHERE  (deleted is null or deleted = 0) and amount > 0 and  date(FROM_UNIXTIME(emission)) >= DATE_SUB(NOW(),INTERVAL 210 DAY)
