@@ -14,8 +14,8 @@ group by client_rut
 
 select c.customer_id, c.business_reason, c.rib,   c.comercial_executive_id, 
 c.allowed_operate, c.status, c.inoperative_end_date, c.inoperative_cause, 
-ifnull(ca.saldofinanciado,0) as  saldofinanciado, ifnull(ca.Mor,0) as mor, ifnull(ca.Jud,0) as jud , 
-ifnull(ca.PreJud,0) as preJud, ifnull(ca.Vig,0) as vig, 
+ifnull(ca.saldofinanciado,0) as  saldofinanciado, ifnull(ca.Mor,0) as Mor, ifnull(ca.Jud,0) as Jud , 
+ifnull(ca.PreJud,0) as PreJud, ifnull(ca.Vig,0) as Vig, 
 CASE WHEN DATEDIFF(CURDATE(), MAX(dcs.abonado_date)) > 365 THEN 1
      WHEN DATEDIFF(CURDATE(), MAX(dcs.abonado_date)) <= 365 THEN 2
      ELSE 0
