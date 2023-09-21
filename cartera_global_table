@@ -1,3 +1,4 @@
+
 with owners_ok as (
 SELECT
     docs.cesion_owner, count(*),
@@ -68,7 +69,7 @@ select
     d.status, 
     datediff(curdate(), FROM_UNIXTIME(d.expiration)) as delta_doc_expiration,
     datediff(CURDATE(), custom_expiration_utc)  as delta_ltc_expiration,
-    case when d.status in (2,3) then "Cartera"
+    case when d.status in (2,3) and d.backoffice_status <> 'Cas' then "Cartera"
     else "Global" end as cartera_global, 
     case when datediff(CURDATE(), d.custom_expiration_utc) <= 0 then '5. Vigente'
          when datediff(CURDATE(), d.custom_expiration_utc) <= 30 and  datediff(CURDATE(), d.custom_expiration_utc) >0 then '4. M 30'
@@ -97,8 +98,9 @@ select
             when 901 then 'CH' -- Cheque
             when 902 then 'PA' -- Pagaré
             else d.document_type
-    end as document_type_name
+    end as document_type_name, 
+      d.amount
     	
 from fc_documents d
 left join owners_ok o ON o.cesion_owner = d.cesion_owner  
-WHERE  (deleted is null or deleted = 0) and amount > 0 and  date(FROM_UNIXTIME(emission)) >= DATE_SUB(NOW(),INTERVAL 210 DAY)
+WHERE  (deleted is null or deleted = 0)  and   ((d.status = 2 and d.backoffice_status <> 'Cas' ) or (date(FROM_UNIXTIME(emission)) >= DATE_SUB(NOW(),INTERVAL 210 DAY)))
