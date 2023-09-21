@@ -66,6 +66,15 @@ select
     judicial_cause_status,
     date_annulment_nc,
     d.status, 
+    datediff(curdate(), FROM_UNIXTIME(d.expiration)) as delta_doc_expiration,
+    datediff(CURDATE(), custom_expiration_utc)  as delta_ltc_expiration,
+    case when d.status in (2,3) then "Cartera"
+    else "Global" end as cartera_global, 
+    case when datediff(CURDATE(), d.custom_expiration_utc) <= 0 then '5. Vigente'
+         when datediff(CURDATE(), d.custom_expiration_utc) <= 30 and  datediff(CURDATE(), d.custom_expiration_utc) >0 then '4. M 30'
+         when datediff(CURDATE(), d.custom_expiration_utc) <= 60 and  datediff(CURDATE(), d.custom_expiration_utc) >30 then '3. M 60'
+         when datediff(CURDATE(), d.custom_expiration_utc) <= 90 and  datediff(CURDATE(), d.custom_expiration_utc) >0 then '2. M 90'
+         when datediff(CURDATE(), d.custom_expiration_utc) > 90 then '1. M +90'end as  distribution_mora,
     o.cesion_owner_name,
     o.cesion_owner,
     CASE WHEN o.cesion_owner IN ('99595990-9', '76146246-6', '76261789-7', '96626570-1') AND d.status IN (2,3) THEN o.cesion_owner_name_fixed
@@ -75,10 +84,21 @@ select
     case when o.cesion_owner is not null and o.cesion_owner not in ('99595990-9', '76146246-6', '76261789-7', '96626570-1') then d.amount
     	else 0 end as Cedido,
     case when o.cesion_owner Is null then d.amount
-    	else 0 end as `Free`
+    	else 0 end as `Free`, 
+  case d.document_type
+            when 30 then 'FF' -- 
+            when 33 then 'FA' -- Factura de Venta
+            when 34 then 'FE' -- Factura de Venta sin IVA
+            when 46 then 'FC' -- Factura de Compra
+            when 601 then 'MF' -- Microfinanciamiento
+			when 701 then 'AP' -- Acuerdo de Pago
+            when 801 then 'OC' -- Orden de Compra
+            when 803 then 'CT' -- Contrato
+            when 901 then 'CH' -- Cheque
+            when 902 then 'PA' -- Pagaré
+            else d.document_type
+    end as document_type_name
     	
 from fc_documents d
 left join owners_ok o ON o.cesion_owner = d.cesion_owner  
 WHERE  (deleted is null or deleted = 0) and amount > 0 and  date(FROM_UNIXTIME(emission)) >= DATE_SUB(NOW(),INTERVAL 210 DAY)
-
-
