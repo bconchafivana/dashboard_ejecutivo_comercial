@@ -1,5 +1,4 @@
-
-with owners_ok as (
+ with owners_ok as (
 SELECT
     docs.cesion_owner, count(*),
     MAX(docs.cesion_owner_name_fixed) OVER (PARTITION BY docs.cesion_owner_name_fixed) AS cesion_owner_name_fixed,
@@ -22,53 +21,53 @@ GROUP BY
     docs.cesion_owner
     )
 select
-    document_id,
-    document_type,
-    no_reception_doc,
+    d.document_id,
+    d.document_type,
+    d.no_reception_doc,
     d.client_rut,
-    folio,
-    debtor_rut,
-    custom_expiration_utc,
-    applied_base_rate,
-    applied_finance_percent,
-    backoffice_status,
-    paid_amount,
-    FROM_UNIXTIME(emission) AS emision,
-    DATEDIFF(FROM_UNIXTIME(emission),CURDATE()) AS EMIDIFF,
-    status_resale,
-    finance_amount,
-    reseller_status,
-    has_annulment_nc,
-    sii_reclaimed,
-    debtor_name,
-    debtor_category,
-    confirmation_verification_date,
-    confirmation_verification_state,
-    reseller_investor_name,
-    collect_executive_id,
-    last_management,
-    next_management_date,
-    last_payment_date,
-    financed_balance,
-    amount,
-    sii_executive_merit,
-    client_name,
-    FROM_UNIXTIME(expiration)  AS expiration,
-    original_amount,
-    comercial_executive_id,
-    abonado_date_utc,
-    last_management_date,
-    document_type_description,
-    published_client_dicom,
-    published_debtor_dicom,
-    has_amount_nc,
-    has_text_nc,
-    judicial_cause_id,
-    judicial_cause_status,
-    date_annulment_nc,
+    d.folio, 
+    d.debtor_rut,
+    d.custom_expiration_utc,
+    d.applied_base_rate,
+    d.applied_finance_percent,
+    d.backoffice_status,
+    d.paid_amount,
+    FROM_UNIXTIME(d.emission) AS emision,
+    DATEDIFF(FROM_UNIXTIME(d.emission),CURDATE()) AS EMIDIFF,
+    d.status_resale,
+    d.finance_amount,
+    d.reseller_status,
+    d.has_annulment_nc,
+    d.sii_reclaimed,
+    d.debtor_name,
+    d.debtor_category,
+    d.confirmation_verification_date,
+    d.confirmation_verification_state,
+    d.reseller_investor_name,
+    d.collect_executive_id,
+    d.last_management,
+    d.next_management_date,
+    d.last_payment_date,
+    d.financed_balance,
+    d.amount,
+    d.sii_executive_merit,
+    d.client_name,
+    FROM_UNIXTIME(d.expiration)  AS expiration,
+    d.original_amount,
+    d.comercial_executive_id,
+    d.abonado_date_utc,
+    d.last_management_date,
+    d.document_type_description,
+    d.published_client_dicom,
+    d.published_debtor_dicom,
+    d.has_amount_nc,
+    d.has_text_nc,
+    d.judicial_cause_id,
+    d.judicial_cause_status,
+    d.date_annulment_nc,
     d.status, 
     datediff(curdate(), FROM_UNIXTIME(d.expiration)) as delta_doc_expiration,
-    datediff(CURDATE(), custom_expiration_utc)  as delta_ltc_expiration,
+    datediff(CURDATE(), d.custom_expiration_utc)  as delta_ltc_expiration,
     case when d.status in (2,3) and d.backoffice_status <> 'Cas' then "Cartera"
     else "Global" end as cartera_global, 
     case when datediff(CURDATE(), d.custom_expiration_utc) <= 0 then '5. Vigente'
@@ -99,8 +98,10 @@ select
             when 902 then 'PA' -- Pagaré
             else d.document_type
     end as document_type_name, 
-      d.amount
-    	
+      d.amount, c.sii_connected ,
+      year(FROM_UNIXTIME(d.emission))*100 + month(FROM_UNIXTIME(d.emission)) as yearmonth_emission 
 from fc_documents d
 left join owners_ok o ON o.cesion_owner = d.cesion_owner  
-WHERE  (deleted is null or deleted = 0)  and   ((d.status = 2 and d.backoffice_status <> 'Cas' ) or (date(FROM_UNIXTIME(emission)) >= DATE_SUB(NOW(),INTERVAL 210 DAY)))
+left join fc_customers c on c.customer_id = d.client_rut
+WHERE  (deleted is null or deleted = 0)  and   ((d.status = 2 and d.backoffice_status <> 'Cas' ) or 
+(MONTH(FROM_UNIXTIME(d.emission)) BETWEEN MONTH(CURDATE()) - 12 AND MONTH(CURDATE())))
