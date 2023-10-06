@@ -104,4 +104,4 @@ from fc_documents d
 left join owners_ok o ON o.cesion_owner = d.cesion_owner  
 left join fc_customers c on c.customer_id = d.client_rut
 WHERE  (deleted is null or deleted = 0)  and   ((d.status = 2 and d.backoffice_status <> 'Cas' ) or 
-(MONTH(FROM_UNIXTIME(d.emission)) BETWEEN MONTH(CURDATE()) - 12 AND MONTH(CURDATE())))
+(MONTH(FROM_UNIXTIME(d.emission)) BETWEEN MONTH(CURDATE()) - 3 AND MONTH(CURDATE())))
