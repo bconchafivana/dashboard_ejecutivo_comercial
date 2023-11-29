@@ -1,28 +1,7 @@
 
-	with owners_ok as (
-SELECT
-    docs.cesion_owner, count(*),
-    MAX(docs.cesion_owner_name_fixed) OVER (PARTITION BY docs.cesion_owner_name_fixed) AS cesion_owner_name_fixed,
-    MAX(docs.cesion_owner_name) OVER (PARTITION BY docs.cesion_owner) AS cesion_owner_name
-FROM
-    (
-        SELECT
-            d.cesion_owner,
-            CASE WHEN d.cesion_owner IN ('99595990-9', '76146246-6', '76261789-7', '96626570-1')
-                THEN 'LATAM TRADE CAPITAL S.A'
-                ELSE cesion_owner_name END AS cesion_owner_name_fixed, 
-            d.cesion_owner_name
-        FROM
-            fc_documents d
-        WHERE
-            year(FROM_UNIXTIME(d.emission)) > 2022 AND d.cesion_owner IS NOT NULL
-         --    and d.cesion_owner = '77218874-9'
-    ) docs
-GROUP BY
-    docs.cesion_owner
-    )
+
 select
-    document_id,
+    d.document_id,
     document_type,
     no_reception_doc,
     d.client_rut,
@@ -75,15 +54,15 @@ select
          when datediff(CURDATE(), d.custom_expiration_utc) <= 60 and  datediff(CURDATE(), d.custom_expiration_utc) >30 then '3. M 60'
          when datediff(CURDATE(), d.custom_expiration_utc) <= 90 and  datediff(CURDATE(), d.custom_expiration_utc) >0 then '2. M 90'
          when datediff(CURDATE(), d.custom_expiration_utc) > 90 then '1. M +90'end as  distribution_mora,
-    o.cesion_owner_name,
-    o.cesion_owner,
-    CASE WHEN o.cesion_owner IN ('99595990-9', '76146246-6', '76261789-7', '96626570-1') AND d.status IN (2,3) THEN o.cesion_owner_name_fixed
-    	ELSE o.cesion_owner_name END AS factor_owner_name, 
-    case when o.cesion_owner IN ('99595990-9', '76146246-6', '76261789-7', '96626570-1') AND d.status IN (2,3) then d.amount
+    oc.cesion_owner_name,
+    oc.cesion_owner,
+    CASE WHEN oc.cesion_owner IN ('99595990-9', '76146246-6', '76261789-7', '96626570-1') AND d.status IN (2,3) THEN oc.cesion_owner_name_fixed
+    	ELSE oc.cesion_owner_name END AS factor_owner_name, 
+    case when oc.cesion_owner IN ('99595990-9', '76146246-6', '76261789-7', '96626570-1') AND d.status IN (2,3) then d.amount
     	else 0 end as Latam,
-    case when o.cesion_owner is not null and o.cesion_owner not in ('99595990-9', '76146246-6', '76261789-7', '96626570-1') then d.amount
+    case when oc.cesion_owner is not null and oc.cesion_owner not in ('99595990-9', '76146246-6', '76261789-7', '96626570-1') then d.amount
     	else 0 end as Cedido,
-    case when o.cesion_owner Is null then d.amount
+    case when oc.cesion_owner Is null then d.amount
     	else 0 end as `Free`, 
     	json_extract_string(d.operation, 'financing_factoring') as financing_factoring,
   case d.document_type
@@ -101,7 +80,8 @@ select
     end as document_type_name, 
       d.amount
 from fc_documents d
-left join owners_ok o ON o.cesion_owner = d.cesion_owner  
+left join bc_owner_cesions oc ON oc.document_id = d.document_id  
 WHERE  (deleted is null or deleted = 0)  and  
 ((d.status = 2 and d.backoffice_status <> 'Cas' and json_extract_string(d.operation, 'financing_factoring') in ('99595990-9',  '76261789-7', '96626570-1' )) or 
 (date(FROM_UNIXTIME(emission)) >= DATE_SUB(NOW(),INTERVAL 90 DAY)))
+	
